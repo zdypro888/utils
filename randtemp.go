@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"bytes"
 	"math"
 	"math/rand"
 	"strconv"
+	"text/template"
 )
 
 //RandomTemplate 随机内容
@@ -49,4 +51,18 @@ func (rc *RandomTemplate) TextContext(texts ...string) string {
 //TextIn 从上下文设置文本中随机选择一个
 func (rc *RandomTemplate) TextIn() string {
 	return rc.textContext[rand.Intn(len(rc.textContext)-1)]
+}
+
+//RandomTemplateText 随机文本
+func RandomTemplateText(text string) (string, error) {
+	contentTpl, err := template.New("Random").Parse(text)
+	if err != nil {
+		return "", err
+	}
+	context := &RandomTemplate{}
+	conio := &bytes.Buffer{}
+	if err := contentTpl.Execute(conio, context); err != nil {
+		return "", err
+	}
+	return string(conio.Bytes()), nil
 }
