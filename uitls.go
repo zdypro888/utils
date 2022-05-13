@@ -2,8 +2,11 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha1"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -233,4 +236,17 @@ func AppleCocoaTimestamp(t time.Time) int64 {
 //AppleCocoaTimestampNano 苹果时间戳 需要 /1000
 func AppleCocoaTimestampNano(t time.Time) int64 {
 	return t.UnixNano() - unixToCocoa*1e9
+}
+
+func HexToCArray(hexstr string) string {
+	data, err := hex.DecodeString(strings.ReplaceAll(hexstr, " ", ""))
+	if err != nil || len(data) == 0 {
+		return ""
+	}
+	writer := &bytes.Buffer{}
+	for _, c := range data {
+		writer.WriteString(fmt.Sprintf("%#02x, ", c))
+	}
+	carray := writer.String()
+	return strings.TrimSuffix(carray, ", ")
 }
