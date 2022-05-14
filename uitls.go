@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha1"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -249,4 +250,27 @@ func HexToCArray(hexstr string) string {
 	}
 	carray := writer.String()
 	return strings.TrimSuffix(carray, ", ")
+}
+
+func BufferToInterger(data []byte, bit int) string {
+	writer := &bytes.Buffer{}
+	index := 0
+	for len(data)-index > 0 {
+		if len(data)-index < bit/8 {
+			writer.WriteString(fmt.Sprintf("%x ", data[index:]))
+			break
+		}
+		switch bit {
+		case 8:
+			writer.WriteString(fmt.Sprintf("%#02x ", data[index]))
+		case 16:
+			writer.WriteString(fmt.Sprintf("%#04x ", binary.LittleEndian.Uint16(data[index:])))
+		case 32:
+			writer.WriteString(fmt.Sprintf("%#08x ", binary.LittleEndian.Uint32(data[index:])))
+		case 64:
+			writer.WriteString(fmt.Sprintf("%#016x ", binary.LittleEndian.Uint64(data[index:])))
+		}
+		index += (bit / 8)
+	}
+	return writer.String()
 }
