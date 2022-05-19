@@ -64,5 +64,5 @@ func RandomTemplateText(text string) (string, error) {
 	if err := contentTpl.Execute(conio, context); err != nil {
 		return "", err
 	}
-	return string(conio.Bytes()), nil
+	return conio.String(), nil
 }
