@@ -245,8 +245,11 @@ func HexToCArray(hexstr string) string {
 		return ""
 	}
 	writer := &bytes.Buffer{}
-	for _, c := range data {
+	for i, c := range data {
 		writer.WriteString(fmt.Sprintf("%#02x, ", c))
+		if (i+1)%0x10 == 0 {
+			writer.WriteString("\n")
+		}
 	}
 	carray := writer.String()
 	return strings.TrimSuffix(carray, ", ")
