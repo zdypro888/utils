@@ -13,18 +13,18 @@ type RandomTemplate struct {
 	textContext []string
 }
 
-//RandChar 文本
-func (rc *RandomTemplate) RandChar(count int) string {
+//Char 文本
+func (rc *RandomTemplate) Char(count int) string {
 	return GetRandomLower(count)
 }
 
-//RandCharN 文本
-func (rc *RandomTemplate) RandCharN(min int, max int) string {
+//CharN 文本
+func (rc *RandomTemplate) CharN(min int, max int) string {
 	return GetRandomLower(min + rand.Intn(max-min))
 }
 
-//RandNum 数字
-func (rc *RandomTemplate) RandNum(count int) string {
+//Num 数字
+func (rc *RandomTemplate) Num(count int) string {
 	if count == 1 {
 		return strconv.Itoa(rand.Intn(9))
 	}
@@ -32,24 +32,24 @@ func (rc *RandomTemplate) RandNum(count int) string {
 	return strconv.Itoa(min + rand.Intn(int(math.Pow10(count))-min-1))
 }
 
-//RandNumN 数字
-func (rc *RandomTemplate) RandNumN(min int, max int) string {
+//NumN 数字
+func (rc *RandomTemplate) NumN(min int, max int) string {
 	return strconv.Itoa(min + rand.Intn(max-min))
 }
 
-//RandIn 随机选取
-func (rc *RandomTemplate) RandIn(texts ...string) string {
+//In 随机选取
+func (rc *RandomTemplate) In(texts ...string) string {
 	return texts[rand.Intn(len(texts)-1)]
 }
 
-//TextContext 初始化文本 上下文
-func (rc *RandomTemplate) TextContext(texts ...string) string {
+//Context 初始化文本 上下文
+func (rc *RandomTemplate) Context(texts ...string) string {
 	rc.textContext = texts
 	return ""
 }
 
-//TextIn 从上下文设置文本中随机选择一个
-func (rc *RandomTemplate) TextIn() string {
+//ContextOne 从上下文设置文本中随机选择一个
+func (rc *RandomTemplate) ContextOne() string {
 	return rc.textContext[rand.Intn(len(rc.textContext)-1)]
 }
 
