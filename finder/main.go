@@ -30,7 +30,7 @@ func searchFileGo(waiter *sync.WaitGroup, fileChan chan string, search []byte, b
 			}
 			continue
 		}
-		var found bool
+		var found int
 		var readn int
 		for {
 			if readn, err = filestream.Read(buf); err != nil {
@@ -39,14 +39,14 @@ func searchFileGo(waiter *sync.WaitGroup, fileChan chan string, search []byte, b
 				}
 				break
 			}
-			if bytes.Index(buf[:readn], search) != -1 {
-				found = true
+			found = bytes.Index(buf[:readn], search)
+			if found != -1 {
 				break
 			}
 		}
 		filestream.Close()
-		if found {
-			log.Printf("搜索文件[%s]找到", file)
+		if found != -1 {
+			log.Printf("搜索文件[%s]找到(%#x)", file, found)
 		}
 	}
 }
