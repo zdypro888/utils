@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -52,7 +51,7 @@ func searchFileGo(waiter *sync.WaitGroup, fileChan chan string, search []byte, b
 }
 
 func searchDir(fileChan chan string, dir string, search []byte) {
-	rd, err := ioutil.ReadDir(dir)
+	rd, err := os.ReadDir(dir)
 	if err != nil {
 		if !strings.HasSuffix(err.Error(), "permission denied") {
 			log.Printf("读取文件夹[%s]错误: %v", dir, err)
@@ -63,8 +62,10 @@ func searchDir(fileChan chan string, dir string, search []byte) {
 		pathname := path.Join(dir, fi.Name())
 		if fi.IsDir() {
 			searchDir(fileChan, pathname, search)
-		} else if fi.Mode()&os.ModeSymlink == 0 {
-			fileChan <- pathname
+		} else if info, err := fi.Info(); err == nil {
+			if info.Mode()&os.ModeSymlink == 0 {
+				fileChan <- pathname
+			}
 		}
 	}
 }
@@ -72,6 +73,7 @@ func searchDir(fileChan chan string, dir string, search []byte) {
 func main() {
 	fDir := flag.String("dir", "/", "搜索目录")
 	fText := flag.String("text", "", "搜索文本")
+	fTextZero := flag.String("textz", "", "搜索文本,包含0结尾")
 	fHex := flag.String("hex", "", "搜索二进制")
 	fBase64 := flag.String("base64", "", "搜索二进制base64格式")
 	flag.Parse()
@@ -80,13 +82,15 @@ func main() {
 		log.Printf("请设置要搜索的目录")
 		return
 	}
-	if *fText == "" && *fHex == "" && *fBase64 == "" {
+	if *fText == "" && *fTextZero == "" && *fHex == "" && *fBase64 == "" {
 		log.Printf("请设置要搜索的内容")
 		return
 	}
 	var search []byte
 	if *fText != "" {
 		search = []byte(*fText)
+	} else if *fTextZero != "" {
+		search = append([]byte(*fTextZero), 0)
 	} else if *fHex != "" {
 		search, _ = hex.DecodeString(*fHex)
 	} else if *fBase64 != "" {

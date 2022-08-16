@@ -18,10 +18,10 @@ import (
 	"unsafe"
 )
 
-//JSONTime json时间
+// JSONTime json时间
 type JSONTime time.Time
 
-//JSONInt 数字
+// JSONInt 数字
 type JSONInt int
 
 // datatime format
@@ -30,7 +30,7 @@ const (
 	RFC3339D        = "2006-01-02T15:04:05Z"
 )
 
-//UnmarshalJSON 到json时间
+// UnmarshalJSON 到json时间
 func (t *JSONTime) UnmarshalJSON(data []byte) error {
 	now, err := time.ParseInLocation(jsonTimeFormart, string(data), time.Local)
 	if err != nil {
@@ -40,12 +40,12 @@ func (t *JSONTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//MarshalJSON 输出文本
+// MarshalJSON 输出文本
 func (t JSONTime) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + time.Time(t).Format(jsonTimeFormart) + `"`), nil
 }
 
-//UnmarshalJSON 到json时间
+// UnmarshalJSON 到json时间
 func (t *JSONInt) UnmarshalJSON(data []byte) error {
 	val, err := strconv.Atoi(strings.Trim(string(data), "\""))
 	if err != nil {
@@ -55,17 +55,17 @@ func (t *JSONInt) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//MarshalJSON 输出文本
+// MarshalJSON 输出文本
 func (t JSONInt) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Itoa(int(t))), nil
 }
 
-//XMLCDATA xml标准CDATA类型
+// XMLCDATA xml标准CDATA类型
 type XMLCDATA struct {
 	Text string `xml:",cdata"`
 }
 
-//ConvertIntefaceSlice 把 interface{} 转换为 inteface{} 数组
+// ConvertIntefaceSlice 把 interface{} 转换为 inteface{} 数组
 func ConvertIntefaceSlice(s interface{}) []interface{} {
 	value := reflect.ValueOf(s)
 	l := value.Len()
@@ -76,7 +76,7 @@ func ConvertIntefaceSlice(s interface{}) []interface{} {
 	return r
 }
 
-//ReadLinesFromReader 读取Reader中所有的行
+// ReadLinesFromReader 读取Reader中所有的行
 func ReadLinesFromReader(r io.Reader, callback func(string) error) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -87,7 +87,7 @@ func ReadLinesFromReader(r io.Reader, callback func(string) error) error {
 	return scanner.Err()
 }
 
-//ReadLinesFromFile 读取文件中所有的行
+// ReadLinesFromFile 读取文件中所有的行
 func ReadLinesFromFile(path string, callback func(string) error) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -97,7 +97,7 @@ func ReadLinesFromFile(path string, callback func(string) error) error {
 	return ReadLinesFromReader(f, callback)
 }
 
-//ReadLines 读取所有的行 如果i为文本型则是文件 如果为reader直接读取
+// ReadLines 读取所有的行 如果i为文本型则是文件 如果为reader直接读取
 func ReadLines(i interface{}, callback func(string) error) error {
 	switch v := i.(type) {
 	case string:
@@ -108,7 +108,7 @@ func ReadLines(i interface{}, callback func(string) error) error {
 	return errors.New("Wrong i")
 }
 
-//ReadString 读取文本
+// ReadString 读取文本
 func ReadString(r io.Reader) (string, error) {
 	breader := bufio.NewReader(r)
 	bytes, err := breader.ReadBytes(0)
@@ -118,7 +118,7 @@ func ReadString(r io.Reader) (string, error) {
 	return string(bytes[:len(bytes)-1]), nil
 }
 
-//WriteAll 将内容全部写出
+// WriteAll 将内容全部写出
 func WriteAll(writer io.Writer, buf []byte) error {
 	var err error
 	var windex, wlen int
@@ -135,12 +135,12 @@ func WriteAll(writer io.Writer, buf []byte) error {
 	return nil
 }
 
-//WriteString 将内容全部写出
+// WriteString 将内容全部写出
 func WriteString(writer io.Writer, str string) error {
 	return WriteAll(writer, []byte(str))
 }
 
-//GetDateOnly 取得日期
+// GetDateOnly 取得日期
 func GetDateOnly(t time.Time, loc *time.Location) time.Time {
 	if loc == nil {
 		loc = time.Local
@@ -149,13 +149,13 @@ func GetDateOnly(t time.Time, loc *time.Location) time.Time {
 	return time.Date(year, month, day, 0, 0, 0, 0, loc)
 }
 
-//InterfaceIsNil 对象是否为nil
+// InterfaceIsNil 对象是否为nil
 func InterfaceIsNil(a interface{}) bool {
 	defer func() { recover() }()
 	return a == nil || reflect.ValueOf(a).IsNil()
 }
 
-//FileSHA1 取得file sha1
+// FileSHA1 取得file sha1
 func FileSHA1(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -173,7 +173,7 @@ const (
 	randomMap = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-//GetRandomString 生成随机字符串
+// GetRandomString 生成随机字符串
 func GetRandomString(length int) string {
 	bytes := []byte(randomMap)
 	bytesLen := len(bytes)
@@ -184,7 +184,7 @@ func GetRandomString(length int) string {
 	return string(result)
 }
 
-//GetRandomLower 生成随机字符串
+// GetRandomLower 生成随机字符串
 func GetRandomLower(length int) string {
 	bytes := []byte(randomMap[10:36])
 	bytesLen := len(bytes)
@@ -195,7 +195,18 @@ func GetRandomLower(length int) string {
 	return string(result)
 }
 
-//PointerBuffer 指针到[]byte
+// GetRandomUpper 生成随机字符串
+func GetRandomUpper(length int) string {
+	bytes := []byte(randomMap[36:])
+	bytesLen := len(bytes)
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		result[i] = bytes[rand.Intn(bytesLen)]
+	}
+	return string(result)
+}
+
+// PointerBuffer 指针到[]byte
 func PointerBuffer(address uintptr, size int) []byte {
 	var data []byte
 	h := (*reflect.SliceHeader)((unsafe.Pointer(&data)))
@@ -205,7 +216,7 @@ func PointerBuffer(address uintptr, size int) []byte {
 	return data
 }
 
-//PathExist 文件是否存在
+// PathExist 文件是否存在
 func PathExist(_path string) bool {
 	_, err := os.Stat(_path)
 	if err != nil && os.IsNotExist(err) {
@@ -214,7 +225,7 @@ func PathExist(_path string) bool {
 	return true
 }
 
-//SplitWithoutEmpty 分割但是去除空
+// SplitWithoutEmpty 分割但是去除空
 func SplitWithoutEmpty(s, sep string) []string {
 	if s == "" {
 		return nil
@@ -229,12 +240,12 @@ const (
 	unixToCocoa      int64 = (31*365 + 31/4 + 1) * secondsPerDay
 )
 
-//AppleCocoaTimestamp 苹果时间戳
+// AppleCocoaTimestamp 苹果时间戳
 func AppleCocoaTimestamp(t time.Time) int64 {
 	return t.Unix() - unixToCocoa
 }
 
-//AppleCocoaTimestampNano 苹果时间戳 需要 /1000
+// AppleCocoaTimestampNano 苹果时间戳 需要 /1000
 func AppleCocoaTimestampNano(t time.Time) int64 {
 	return t.UnixNano() - unixToCocoa*1e9
 }
