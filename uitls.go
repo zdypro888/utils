@@ -255,6 +255,10 @@ func HexToCArray(hexstr string) string {
 	if err != nil || len(data) == 0 {
 		return ""
 	}
+	return DataCArray(data)
+}
+
+func DataCArray(data []byte) string {
 	writer := &bytes.Buffer{}
 	for i, c := range data {
 		writer.WriteString(fmt.Sprintf("%#02x, ", c))
