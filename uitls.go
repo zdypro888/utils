@@ -250,19 +250,19 @@ func AppleCocoaTimestampNano(t time.Time) int64 {
 	return t.UnixNano() - unixToCocoa*1e9
 }
 
-func HexToCArray(hexstr string) string {
+func HexToCArray(hexstr string, nlinec int) string {
 	data, err := hex.DecodeString(strings.ReplaceAll(hexstr, " ", ""))
 	if err != nil || len(data) == 0 {
 		return ""
 	}
-	return DataCArray(data)
+	return DataCArray(data, nlinec)
 }
 
-func DataCArray(data []byte) string {
+func DataCArray(data []byte, nlinec int) string {
 	writer := &bytes.Buffer{}
 	for i, c := range data {
 		writer.WriteString(fmt.Sprintf("%#02x, ", c))
-		if (i+1)%0x10 == 0 {
+		if nlinec > 0 && (i+1)%nlinec == 0 {
 			writer.WriteString("\n")
 		}
 	}
