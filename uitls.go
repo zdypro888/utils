@@ -65,11 +65,11 @@ type XMLCDATA struct {
 	Text string `xml:",cdata"`
 }
 
-// ConvertIntefaceSlice 把 interface{} 转换为 inteface{} 数组
-func ConvertIntefaceSlice(s interface{}) []interface{} {
+// ConvertIntefaceSlice 把 any 转换为 inteface{} 数组
+func ConvertIntefaceSlice(s any) []any {
 	value := reflect.ValueOf(s)
 	l := value.Len()
-	r := make([]interface{}, l)
+	r := make([]any, l)
 	for i := 0; i < l; i++ {
 		r[i] = value.Index(i).Interface()
 	}
@@ -98,7 +98,7 @@ func ReadLinesFromFile(path string, callback func(string) error) error {
 }
 
 // ReadLines 读取所有的行 如果i为文本型则是文件 如果为reader直接读取
-func ReadLines(i interface{}, callback func(string) error) error {
+func ReadLines(i any, callback func(string) error) error {
 	switch v := i.(type) {
 	case string:
 		return ReadLinesFromFile(v, callback)
@@ -150,7 +150,7 @@ func GetDateOnly(t time.Time, loc *time.Location) time.Time {
 }
 
 // InterfaceIsNil 对象是否为nil
-func InterfaceIsNil(a interface{}) bool {
+func InterfaceIsNil(a any) bool {
 	defer func() { recover() }()
 	return a == nil || reflect.ValueOf(a).IsNil()
 }
