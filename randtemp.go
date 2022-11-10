@@ -23,22 +23,22 @@ func (rc *RandomTemplate) CharN(min int, max int) string {
 	return GetRandomString(min + rand.Intn(max-min))
 }
 
-// Char 文本
+// LChar 文本
 func (rc *RandomTemplate) LChar(count int) string {
 	return GetRandomLower(count)
 }
 
-// CharN 文本
+// LCharN 文本
 func (rc *RandomTemplate) LCharN(min int, max int) string {
 	return GetRandomLower(min + rand.Intn(max-min))
 }
 
-// Char 文本
+// UChar 文本
 func (rc *RandomTemplate) UChar(count int) string {
 	return GetRandomLower(count)
 }
 
-// CharN 文本
+// UCharN 文本
 func (rc *RandomTemplate) UCharN(min int, max int) string {
 	return GetRandomLower(min + rand.Intn(max-min))
 }
