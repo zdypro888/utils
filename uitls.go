@@ -250,6 +250,11 @@ func AppleCocoaTimestampNano(t time.Time) int64 {
 	return t.UnixNano() - unixToCocoa*1e9
 }
 
+// AppleCocoaTimestamp 苹果时间戳
+func AppleCocoaFromTimestamp(timespan int64) time.Time {
+	return time.Unix(timespan+unixToCocoa, 0)
+}
+
 func HexToCArray(hexstr string, nlinec int) string {
 	data, err := hex.DecodeString(strings.ReplaceAll(hexstr, " ", ""))
 	if err != nil || len(data) == 0 {
