@@ -105,7 +105,7 @@ func ReadLines(i any, callback func(string) error) error {
 	case io.Reader:
 		return ReadLinesFromReader(v, callback)
 	}
-	return errors.New("Wrong i")
+	return errors.New("wrong i")
 }
 
 // ReadString 读取文本
