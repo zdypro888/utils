@@ -14,12 +14,6 @@ type iReader interface {
 	Size() int64
 }
 
-// type Cryptor interface {
-// 	Crypt([]byte)
-// 	Reset() error
-// 	Clone() Cryptor
-// }
-
 type Reader struct {
 	readers []iReader
 	closers []io.Closer
@@ -76,9 +70,16 @@ func (r *Reader) Size() int64 {
 
 func (r *Reader) Close() error {
 	var err error
-	for _, c := range r.closers {
-		if nerr := c.Close(); nerr != nil {
+	for _, closer := range r.closers {
+		if nerr := closer.Close(); nerr != nil {
 			err = nerr
+		}
+	}
+	for _, rd := range r.readers {
+		if closer, ok := rd.(io.Closer); ok {
+			if nerr := closer.Close(); nerr != nil {
+				err = nerr
+			}
 		}
 	}
 	return err
@@ -149,8 +150,8 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	return r.offset, nil
 }
 
-// ReadSection returns a new Reader that reads from the specified offset and length of the original Reader.
-func (r *Reader) ReadSection(offset, length int64) *Reader {
+// PeekSection returns a new Reader that reads from the specified offset and length of the original Reader.
+func (r *Reader) PeekSection(offset, length int64) *Reader {
 	if length < 0 || length > r.size-offset {
 		length = r.size - offset
 	}
@@ -164,12 +165,18 @@ func (r *Reader) ReadSection(offset, length int64) *Reader {
 
 // ReadLimit returns a new Reader that reads from the current offset of the original Reader.
 func (r *Reader) ReadLimit(length int64) *Reader {
-	return r.ReadSection(r.offset, length)
+	reader := r.PeekSection(r.offset, length)
+	r.offset += reader.size
+	return reader
 }
 
 // Temporary returns a new Reader that reads from the beginning of the original Reader.
 func (r *Reader) Temporary() *Reader {
-	return r.ReadSection(0, -1)
+	return r.PeekSection(0, -1)
+}
+
+func (r *Reader) Reset() {
+	r.offset = 0
 }
 
 func (r *Reader) Sum(hasher hash.Hash) ([]byte, error) {
