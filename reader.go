@@ -85,35 +85,44 @@ func (r *Reader) Close() error {
 	return err
 }
 
-func (r *Reader) ReadAt(p []byte, off int64) (int, error) {
+func (r *Reader) ReadAt(data []byte, offset int64) (int, error) {
 	if len(r.readers) == 0 {
 		return 0, io.EOF
 	}
-	if off >= r.size {
+	if offset >= r.size {
 		return 0, io.EOF
 	}
-	var roff int64
-	totalRead := 0
+	var leftOffset int64
+	readlen := 0
 	for _, rd := range r.readers {
-		readerOff := roff
-		roff += rd.Size()
-		if off >= readerOff && off < readerOff+rd.Size() {
-			n, err := rd.ReadAt(p[totalRead:], off-readerOff)
-			off += int64(n)
-			totalRead += n
+		rightOffset := leftOffset + rd.Size()
+		if offset >= leftOffset && offset < rightOffset {
+			n, err := rd.ReadAt(data[readlen:], offset-leftOffset)
+			offset += int64(n)
+			readlen += n
 			if err != nil && err != io.EOF {
-				return totalRead, err
+				// 遇到非EOF错误时，返回已读取的数据和错误
+				return readlen, err
 			}
-			if totalRead == len(p) {
-				return totalRead, nil
+			if readlen == len(data) {
+				if err == nil {
+					return readlen, nil
+				} else if offset >= r.size {
+					return readlen, io.EOF
+				} else {
+					return readlen, nil
+				}
 			}
-			if err == io.EOF && off < r.size {
-				continue
+			if offset < rightOffset {
+				if err == io.EOF {
+					return readlen, io.EOF
+				}
+				return readlen, nil
 			}
-			return totalRead, err
 		}
+		leftOffset = rightOffset
 	}
-	return totalRead, io.EOF
+	return readlen, io.EOF
 }
 
 func (r *Reader) Read(p []byte) (int, error) {
