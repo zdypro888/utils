@@ -146,11 +146,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekEnd:
 		r.offset = r.size + offset
 	default:
-		return 0, errors.New("invalid whence")
+		return -1, errors.New("invalid whence")
 	}
 	if r.offset < 0 {
 		r.offset = 0
-		return 0, errors.New("negative position")
+		return -1, errors.New("negative position")
 	}
 	if r.offset > r.size {
 		r.offset = r.size
