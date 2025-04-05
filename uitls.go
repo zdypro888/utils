@@ -65,13 +65,11 @@ type XMLCDATA struct {
 	Text string `xml:",cdata"`
 }
 
-// ConvertIntefaceSlice 把 any 转换为 inteface{} 数组
-func ConvertIntefaceSlice(s any) []any {
-	value := reflect.ValueOf(s)
-	l := value.Len()
-	r := make([]any, l)
-	for i := 0; i < l; i++ {
-		r[i] = value.Index(i).Interface()
+// ConvertAnySlice 把 any 转换为 inteface{} 数组
+func ConvertAnySlice[T any](slice []T) []any {
+	r := make([]any, len(slice))
+	for i, v := range slice {
+		r[i] = v
 	}
 	return r
 }
@@ -169,41 +167,39 @@ func FileSHA1(path string) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-const (
-	randomMap = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-)
-
-// GetRandomString 生成随机字符串
-func GetRandomString(length int) string {
+func getRandomWithMap(length int, randomMap string) string {
 	bytes := []byte(randomMap)
 	bytesLen := len(bytes)
 	result := make([]byte, length)
-	for i := 0; i < length; i++ {
+	for i := range length {
 		result[i] = bytes[rand.Intn(bytesLen)]
 	}
 	return string(result)
+}
+
+// GetRandomString 生成随机字符串
+func GetRandomString(length int) string {
+	return getRandomWithMap(length, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
 // GetRandomLower 生成随机字符串
 func GetRandomLower(length int) string {
-	bytes := []byte(randomMap[10:36])
-	bytesLen := len(bytes)
-	result := make([]byte, length)
-	for i := 0; i < length; i++ {
-		result[i] = bytes[rand.Intn(bytesLen)]
-	}
-	return string(result)
+	return getRandomWithMap(length, "abcdefghijklmnopqrstuvwxyz")
+}
+
+// GetRandomLowerWithNumber 生成随机字符串
+func GetRandomLowerWithNumber(length int) string {
+	return getRandomWithMap(length, "0123456789abcdefghijklmnopqrstuvwxyz")
 }
 
 // GetRandomUpper 生成随机字符串
 func GetRandomUpper(length int) string {
-	bytes := []byte(randomMap[36:])
-	bytesLen := len(bytes)
-	result := make([]byte, length)
-	for i := 0; i < length; i++ {
-		result[i] = bytes[rand.Intn(bytesLen)]
-	}
-	return string(result)
+	return getRandomWithMap(length, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+}
+
+// GetRandomUpperWithNumber 生成随机字符串
+func GetRandomUpperWithNumber(length int) string {
+	return getRandomWithMap(length, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
 // PointerBuffer 指针到[]byte
