@@ -188,10 +188,19 @@ func (r *Reader) Reset() {
 	r.offset = 0
 }
 
-func (r *Reader) Sum(hasher hash.Hash) ([]byte, error) {
+// CopyTo copies the contents of the reader to the writer. and offset is not changed.
+func (r *Reader) CopyTo(writer io.Writer) error {
 	curpos, _ := r.Seek(0, io.SeekCurrent)
 	defer r.Seek(curpos, io.SeekStart)
-	if _, err := io.Copy(hasher, r); err != nil {
+	if _, err := io.Copy(writer, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Sum returns the hash of the reader.
+func (r *Reader) Sum(hasher hash.Hash) ([]byte, error) {
+	if err := r.CopyTo(hasher); err != nil {
 		return nil, err
 	}
 	return hasher.Sum(nil), nil
