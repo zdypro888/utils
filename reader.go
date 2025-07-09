@@ -16,7 +16,6 @@ type iReader interface {
 
 type Reader struct {
 	readers []iReader
-	closers []io.Closer
 	offset  int64
 	size    int64
 }
@@ -31,26 +30,47 @@ func NewReader(f ...any) (*Reader, error) {
 	return r, nil
 }
 
+type autoDeleteReader struct {
+	filename string
+	iReader
+}
+
+func (r *autoDeleteReader) Close() error {
+	return os.Remove(r.filename)
+}
+
+func (r *Reader) AppendFile(filename string, autoDelete bool) error {
+	fi, err := os.OpenFile(filename, os.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	st, err := fi.Stat()
+	if err != nil {
+		fi.Close()
+		return err
+	}
+	r.size += st.Size()
+	filereader := io.NewSectionReader(fi, 0, st.Size())
+	if autoDelete {
+		r.readers = append(r.readers, &autoDeleteReader{filename: filename, iReader: filereader})
+	} else {
+		r.readers = append(r.readers, filereader)
+	}
+	return nil
+}
+
+func (r *Reader) AppendBytes(b []byte) error {
+	r.size += int64(len(b))
+	r.readers = append(r.readers, io.NewSectionReader(bytes.NewReader(b), 0, int64(len(b))))
+	return nil
+}
+
 func (r *Reader) Append(f any) error {
 	switch fo := f.(type) {
 	case string:
-		fi, err := os.OpenFile(fo, os.O_RDONLY, 0)
-		if err != nil {
-			return err
-		}
-		st, err := fi.Stat()
-		if err != nil {
-			fi.Close()
-			return err
-		}
-		r.closers = append(r.closers, fi)
-		r.size += st.Size()
-		r.readers = append(r.readers, io.NewSectionReader(fi, 0, st.Size()))
-		return nil
+		return r.AppendFile(fo, false)
 	case []byte:
-		r.size += int64(len(fo))
-		r.readers = append(r.readers, io.NewSectionReader(bytes.NewReader(fo), 0, int64(len(fo))))
-		return nil
+		return r.AppendBytes(fo)
 	case *bytes.Reader:
 		r.size += int64(fo.Len())
 		r.readers = append(r.readers, io.NewSectionReader(fo, 0, int64(fo.Len())))
@@ -70,11 +90,6 @@ func (r *Reader) Size() int64 {
 
 func (r *Reader) Close() error {
 	var err error
-	for _, closer := range r.closers {
-		if nerr := closer.Close(); nerr != nil {
-			err = nerr
-		}
-	}
 	for _, rd := range r.readers {
 		if closer, ok := rd.(io.Closer); ok {
 			if nerr := closer.Close(); nerr != nil {
