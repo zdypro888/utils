@@ -38,11 +38,18 @@ func NewReader(f ...any) (*Reader, error) {
 
 type autoDeleteReader struct {
 	filename string
+	file     *os.File // 保存文件句柄，Close 时先关闭文件再删除
 	iReader
 }
 
 func (r *autoDeleteReader) Close() error {
-	return os.Remove(r.filename)
+	// 先关闭文件句柄
+	if r.file != nil {
+		r.file.Close()
+	}
+	// 再删除文件（忽略删除错误，避免影响上传流程）
+	os.Remove(r.filename)
+	return nil
 }
 
 func (r *Reader) AppendFile(filename string, autoDelete bool) error {
@@ -58,7 +65,7 @@ func (r *Reader) AppendFile(filename string, autoDelete bool) error {
 	r.size += st.Size()
 	filereader := io.NewSectionReader(fi, 0, st.Size())
 	if autoDelete {
-		r.readers = append(r.readers, &autoDeleteReader{filename: filename, iReader: filereader})
+		r.readers = append(r.readers, &autoDeleteReader{filename: filename, file: fi, iReader: filereader})
 	} else {
 		r.readers = append(r.readers, filereader)
 	}
