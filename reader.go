@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-type iReader interface {
+type ReaderAtSize interface {
 	io.ReaderAt
 	Size() int64
 }
@@ -19,7 +19,7 @@ type IProgress interface {
 }
 
 type Reader struct {
-	readers []iReader
+	readers []ReaderAtSize
 	offset  int64
 	size    int64
 	// 进度回调
@@ -36,23 +36,53 @@ func NewReader(f ...any) (*Reader, error) {
 	return r, nil
 }
 
-type autoDeleteReader struct {
-	filename string
-	file     *os.File // 保存文件句柄，Close 时先关闭文件再删除
-	iReader
+type FileTag uint64
+
+const (
+	FileTagCloseHandle FileTag = 0x01
+	FileTagDeleteFile  FileTag = 0x02
+	FileTagAll         FileTag = FileTagCloseHandle | FileTagDeleteFile
+)
+
+type fileReader struct {
+	Name   string
+	Handle *os.File // 保存文件句柄，Close 时先关闭文件再删除
+	Tag    FileTag
+	ReaderAtSize
 }
 
-func (r *autoDeleteReader) Close() error {
-	// 先关闭文件句柄
-	if r.file != nil {
-		r.file.Close()
+func (r *fileReader) Open() error {
+	if r.Handle != nil {
+		r.Handle.Close()
 	}
-	// 再删除文件（忽略删除错误，避免影响上传流程）
-	os.Remove(r.filename)
+	fi, err := os.OpenFile(r.Name, os.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	r.Handle = fi
 	return nil
 }
 
-func (r *Reader) AppendFile(filename string, autoDelete bool) error {
+func (r *fileReader) Close() error {
+	if r.Tag&FileTagCloseHandle == FileTagCloseHandle {
+		if r.Handle != nil {
+			r.Handle.Close()
+		}
+	}
+	if r.Tag&FileTagDeleteFile == FileTagDeleteFile {
+		os.Remove(r.Name)
+	}
+	return nil
+}
+
+func (r *fileReader) Remove() {
+	if r.Handle != nil {
+		r.Handle.Close()
+	}
+	os.Remove(r.Name)
+}
+
+func (r *Reader) AppendFile(filename string, tag FileTag) error {
 	fi, err := os.OpenFile(filename, os.O_RDONLY, 0)
 	if err != nil {
 		return err
@@ -63,12 +93,7 @@ func (r *Reader) AppendFile(filename string, autoDelete bool) error {
 		return err
 	}
 	r.size += st.Size()
-	filereader := io.NewSectionReader(fi, 0, st.Size())
-	if autoDelete {
-		r.readers = append(r.readers, &autoDeleteReader{filename: filename, file: fi, iReader: filereader})
-	} else {
-		r.readers = append(r.readers, filereader)
-	}
+	r.readers = append(r.readers, &fileReader{Name: filename, Handle: fi, Tag: tag, ReaderAtSize: io.NewSectionReader(fi, 0, st.Size())})
 	return nil
 }
 
@@ -81,19 +106,46 @@ func (r *Reader) AppendBytes(b []byte) error {
 func (r *Reader) Append(f any) error {
 	switch fo := f.(type) {
 	case string:
-		return r.AppendFile(fo, false)
+		return r.AppendFile(fo, FileTagAll)
 	case []byte:
 		return r.AppendBytes(fo)
 	case *bytes.Reader:
 		r.size += int64(fo.Len())
 		r.readers = append(r.readers, io.NewSectionReader(fo, 0, int64(fo.Len())))
 		return nil
-	case iReader:
+	case ReaderAtSize:
 		r.size += fo.Size()
 		r.readers = append(r.readers, fo)
 		return nil
 	default:
 		return fmt.Errorf("unsupported type: %T", f)
+	}
+}
+
+type Openable interface {
+	Open() error
+}
+
+func (r *Reader) Open() error {
+	for _, rd := range r.readers {
+		if reader, ok := rd.(Openable); ok {
+			if err := reader.Open(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type Removeable interface {
+	Remove()
+}
+
+func (r *Reader) Remove() {
+	for _, rd := range r.readers {
+		if remover, ok := rd.(Removeable); ok {
+			remover.Remove()
+		}
 	}
 }
 
@@ -196,7 +248,7 @@ func (r *Reader) PeekSection(offset, length int64) *Reader {
 		length = r.size - offset
 	}
 	reader := &Reader{
-		readers: []iReader{io.NewSectionReader(r, offset, length)},
+		readers: []ReaderAtSize{io.NewSectionReader(r, offset, length)},
 		offset:  0,
 		size:    length,
 	}
