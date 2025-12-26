@@ -24,7 +24,7 @@ type Reader struct {
 	offset  int64
 	size    int64
 	// 进度回调
-	Progress chan *OffsetSize
+	progress chan *OffsetSize
 }
 
 func NewReader(f ...any) (*Reader, error) {
@@ -35,6 +35,10 @@ func NewReader(f ...any) (*Reader, error) {
 		}
 	}
 	return r, nil
+}
+
+func (r *Reader) Progress() <-chan *OffsetSize {
+	return r.progress
 }
 
 type FileTag uint64
@@ -209,9 +213,9 @@ func (r *Reader) ReadAt(data []byte, offset int64) (int, error) {
 func (r *Reader) Read(p []byte) (int, error) {
 	n, err := r.ReadAt(p, r.offset)
 	r.offset += int64(n)
-	if r.Progress != nil {
+	if r.progress != nil {
 		select {
-		case r.Progress <- &OffsetSize{Offset: r.offset, Size: r.size}:
+		case r.progress <- &OffsetSize{Offset: r.offset, Size: r.size}:
 		default:
 		}
 	}
