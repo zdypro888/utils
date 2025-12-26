@@ -37,8 +37,8 @@ func NewReader(f ...any) (*Reader, error) {
 	return r, nil
 }
 
-func (r *Reader) Progress() <-chan *OffsetSize {
-	return r.progress
+func (r *Reader) WithProgress(progress chan *OffsetSize) {
+	r.progress = progress
 }
 
 type FileTag uint64
