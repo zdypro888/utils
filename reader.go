@@ -14,8 +14,9 @@ type ReaderAtSize interface {
 	Size() int64
 }
 
-type IProgress interface {
-	OnProgress(offset, size int64)
+type OffsetSize struct {
+	Offset int64
+	Size   int64
 }
 
 type Reader struct {
@@ -23,7 +24,7 @@ type Reader struct {
 	offset  int64
 	size    int64
 	// 进度回调
-	Progress IProgress
+	Progress chan *OffsetSize
 }
 
 func NewReader(f ...any) (*Reader, error) {
@@ -209,7 +210,10 @@ func (r *Reader) Read(p []byte) (int, error) {
 	n, err := r.ReadAt(p, r.offset)
 	r.offset += int64(n)
 	if r.Progress != nil {
-		r.Progress.OnProgress(r.offset, r.size)
+		select {
+		case r.Progress <- &OffsetSize{Offset: r.offset, Size: r.size}:
+		default:
+		}
 	}
 	return n, err
 }
