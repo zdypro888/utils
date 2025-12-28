@@ -44,9 +44,8 @@ func (r *Reader) WithProgress(progress chan *OffsetSize) {
 type FileTag uint64
 
 const (
-	FileTagCloseHandle FileTag = 0x01
-	FileTagDeleteFile  FileTag = 0x02
-	FileTagAll         FileTag = FileTagCloseHandle | FileTagDeleteFile
+	FileTagNone   FileTag = 0x00
+	FileTagDelete FileTag = 0x01
 )
 
 type fileReader struct {
@@ -69,12 +68,10 @@ func (r *fileReader) Open() error {
 }
 
 func (r *fileReader) Close() error {
-	if r.Tag&FileTagCloseHandle == FileTagCloseHandle {
-		if r.Handle != nil {
-			r.Handle.Close()
-		}
+	if r.Handle != nil {
+		r.Handle.Close()
 	}
-	if r.Tag&FileTagDeleteFile == FileTagDeleteFile {
+	if r.Tag&FileTagDelete == FileTagDelete {
 		os.Remove(r.Name)
 	}
 	return nil
@@ -111,7 +108,7 @@ func (r *Reader) AppendBytes(b []byte) error {
 func (r *Reader) Append(f any) error {
 	switch fo := f.(type) {
 	case string:
-		return r.AppendFile(fo, FileTagAll)
+		return r.AppendFile(fo, FileTagNone)
 	case []byte:
 		return r.AppendBytes(fo)
 	case *bytes.Reader:
