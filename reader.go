@@ -207,15 +207,19 @@ func (r *Reader) ReadAt(data []byte, offset int64) (int, error) {
 	return readlen, io.EOF
 }
 
-func (r *Reader) Read(p []byte) (int, error) {
-	n, err := r.ReadAt(p, r.offset)
-	r.offset += int64(n)
+func (r *Reader) setOffset(offset int64) {
+	r.offset = offset
 	if r.progress != nil {
 		select {
 		case r.progress <- &OffsetSize{Offset: r.offset, Size: r.size}:
 		default:
 		}
 	}
+}
+
+func (r *Reader) Read(p []byte) (int, error) {
+	n, err := r.ReadAt(p, r.offset)
+	r.setOffset(r.offset + int64(n))
 	return n, err
 }
 
@@ -228,20 +232,20 @@ func (r *Reader) UnLen() int64 {
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
-		r.offset = offset
+		r.setOffset(offset)
 	case io.SeekCurrent:
-		r.offset += offset
+		r.setOffset(r.offset + offset)
 	case io.SeekEnd:
-		r.offset = r.size + offset
+		r.setOffset(r.size + offset)
 	default:
 		return -1, errors.New("invalid whence")
 	}
 	if r.offset < 0 {
-		r.offset = 0
+		r.setOffset(0)
 		return -1, errors.New("negative position")
 	}
 	if r.offset > r.size {
-		r.offset = r.size
+		r.setOffset(r.size)
 		return r.size, errors.New("position out of bounds")
 	}
 	return r.offset, nil
@@ -263,17 +267,19 @@ func (r *Reader) PeekSection(offset, length int64) *Reader {
 // ReadLimit returns a new Reader that reads from the current offset of the original Reader.
 func (r *Reader) ReadLimit(length int64) *Reader {
 	reader := r.PeekSection(r.offset, length)
-	r.offset += reader.size
+	r.setOffset(r.offset + reader.size)
 	return reader
 }
 
 // Temporary returns a new Reader that reads from the beginning of the original Reader.
 func (r *Reader) Temporary() *Reader {
-	return r.PeekSection(0, -1)
+	reader := r.PeekSection(0, -1)
+	reader.progress = r.progress
+	return reader
 }
 
 func (r *Reader) Reset() {
-	r.offset = 0
+	r.setOffset(0)
 }
 
 // CopyTo copies the contents of the reader to the writer. and offset is not changed.
